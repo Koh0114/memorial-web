@@ -1,0 +1,1 @@
+app/purpose/page.tsx export default function Page(){ return우리가 추모하는 이유; }
