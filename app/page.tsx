@@ -1,103 +1,119 @@
+// app/page.tsx
+'use client';
 import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import DaejeonCemeteryMap from "@/components/DaejeonCemeteryMap";
 
-export default function Home() {
+export default function Page() {
+  // 왼쪽 이미지 영역 크기 측정
+  const imgBoxRef = useRef<HTMLDivElement>(null);
+  const [imgRatio, setImgRatio] = useState<number | null>(null);  // 이미지 세로/가로 비
+  const [imgHeight, setImgHeight] = useState<number | null>(null);
+
+  // 오른쪽 버튼 스택 높이 측정
+  const rightTopRef = useRef<HTMLDivElement>(null);
+  const [rightTopH, setRightTopH] = useState<number | null>(null);
+
+  // 버튼 영역과 지도 사이 간격(px) — mt-6 = 24px
+  const GAP = 24;
+
+  const onImgComplete = (img: HTMLImageElement) => {
+    const r = img.naturalHeight / img.naturalWidth;
+    setImgRatio(r);
+    if (imgBoxRef.current) {
+      const w = imgBoxRef.current.clientWidth;
+      setImgHeight(Math.round(w * r));
+    }
+  };
+
+  // 왼쪽 영역 너비 변경 감지 → 이미지 높이 재계산
+  useEffect(() => {
+    if (!imgRatio || !imgBoxRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0].contentRect.width;
+      setImgHeight(Math.round(w * imgRatio));
+    });
+    ro.observe(imgBoxRef.current);
+    return () => ro.disconnect();
+  }, [imgRatio]);
+
+  // 오른쪽 버튼 블록 높이 감지
+  useEffect(() => {
+    if (!rightTopRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      setRightTopH(Math.round(entries[0].contentRect.height));
+    });
+    ro.observe(rightTopRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  // 지도 높이 계산: 왼쪽 이미지 높이 - 오른쪽 버튼 영역 높이 - 간격
+  const mapH = useMemo(() => {
+    if (imgHeight == null || rightTopH == null) return null;
+    const h = imgHeight - rightTopH - GAP;
+    return Math.max(160, Math.round(h));
+  }, [imgHeight, rightTopH]);
+
+  // 버튼 공통 클래스(검은 테두리 + 가시성 강화)
+  const btn = "bg-gray-200 text-black px-5 py-3 rounded-lg text-center border-2 border-black hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black";
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <section className="p-6 max-w-6xl mx-auto space-y-8">
+      {/* 상단 타이틀 */}
+      <header className="space-y-2">
+        <h1 className="text-4xl font-bold">온라인 헌화</h1>
+        <h3 className="text-xl">언제 어디서든 환경 문제 없는 온라인 헌화하세요.</h3>
+      </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+      {/* 2열 레이아웃 */}
+      <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr] items-start">
+        {/* 왼쪽: 사진 전체 표시 + 출처 */}
+        <div ref={imgBoxRef} className="w-full">
+          <figure className="w-full">
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+              src="/images/daejeon-hero.jpg"
+              alt="국립대전현충원 추모 기념 사진"
+              width={1200}
+              height={1908}
+              priority
+              className="w-full h-auto rounded"
+              sizes="(min-width:1024px) 66vw, 100vw"
+              onLoadingComplete={onImgComplete}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <figcaption className="mt-2 text-xs text-gray-500">출처: 국립대전현충원</figcaption>
+          </figure>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        {/* 오른쪽: 버튼 스택 + 지도(버튼 아래, 사진 하단과 정렬) */}
+        <aside className="space-y-6">
+          {/* 버튼 블록(지도와 높이 동기화를 위해 ref로 측정) */}
+          <div ref={rightTopRef} className="space-y-4">
+            <h2 className="text-xl font-semibold">바로가기</h2>
+            <nav className="grid gap-3">
+              <Link href="/offering" className={btn}>헌화하기</Link>
+              <Link href="/transparency" className={btn}>현황판</Link>
+              <Link href="/etiquette" className={btn}>방문 시 예절</Link>
+              <Link href="/guestbook" className={btn}>방명록</Link>
+              <Link href="/heroes" className={btn}>순국선열 호국영령</Link>
+              <Link href="/purpose" className={btn}>의의</Link>
+              <Link href="/mosaic" className={btn}>헌화 현충탑</Link>
+            </nav>
+          </div>
+
+          {/* 지도: 버튼 아래, 왼쪽 사진 하단과 맞춤 */}
+          {mapH && (
+            <div className="mt-6">
+              <DaejeonCemeteryMap
+                bare
+                showHeader={false}
+                showExternalLinks={true}
+                heightPx={mapH}
+              />
+            </div>
+          )}
+        </aside>
+      </div>
+    </section>
   );
 }
