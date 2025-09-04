@@ -1,13 +1,11 @@
-// components/DaejeonCemeteryMap.tsx
+// components/DaejeonCemeteryMap.tsx (교체용)
 'use client';
-import { useEffect, useRef, useState } from 'react';
-
-declare global { interface Window { kakao: any } }
+import { useEffect, useRef } from 'react';
 
 type Props = {
-  bare?: boolean;                 // true면 테두리/패딩 없이
-  heightClass?: string;           // Tailwind 높이 클래스(선택)
-  heightPx?: number;              // px 단위 높이(선택)
+  bare?: boolean;
+  heightClass?: string;
+  heightPx?: number;
   showHeader?: boolean;
   showExternalLinks?: boolean;
 };
@@ -20,40 +18,57 @@ export default function DaejeonCemeteryMap({
   showExternalLinks = true,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const key = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
-    if (!key) { console.warn('Kakao JS 키가 설정되지 않았어(.env.local 확인)'); return; }
-    if (typeof window !== 'undefined' && window.kakao?.maps) { setReady(true); return; }
-    const s = document.createElement('script');
-    s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&autoload=false&libraries=services`;
-    s.async = true;
-    s.onload = () => window.kakao.maps.load(() => setReady(true));
-    document.head.appendChild(s);
-  }, []);
+    const w = window as any;
 
-  useEffect(() => {
-    if (!ready || !ref.current) return;
-    const { kakao } = window;
-    const map = new kakao.maps.Map(ref.current, {
-      center: new kakao.maps.LatLng(36.35, 127.33),
-      level: 6,
-    });
-    const ps = new kakao.maps.services.Places();
-    ps.keywordSearch('국립대전현충원', (data: any, status: any) => {
-      if (status !== kakao.maps.services.Status.OK || !data?.length) return;
-      const place = data[0];
-      const latlng = new kakao.maps.LatLng(place.y, place.x);
-      map.setCenter(latlng);
-      map.setLevel(5);
-      const marker = new kakao.maps.Marker({ position: latlng, map });
-      const iw = new kakao.maps.InfoWindow({
-        content: `<div style="padding:6px 10px;font-size:12px;">국립대전현충원</div>`,
+    const init = () => {
+      if (!ref.current) return;
+      if (!w.kakao?.maps) return;
+
+      const { kakao } = w;
+
+      const map = new kakao.maps.Map(ref.current, {
+        center: new kakao.maps.LatLng(36.35, 127.33),
+        level: 6,
       });
-      iw.open(map, marker);
-    });
-  }, [ready]);
+
+      if (!kakao.maps.services?.Places) {
+        console.warn('kakao.maps.services가 없습니다. SDK URL에 libraries=services가 포함되어야 합니다.');
+        return;
+      }
+
+      const ps = new kakao.maps.services.Places();
+      ps.keywordSearch('국립대전현충원', (data: any, status: any) => {
+        if (status !== kakao.maps.services.Status.OK || !data?.length) return;
+        const place = data[0];
+        const lat = Number(place.y);
+        const lng = Number(place.x);
+        const latlng = new kakao.maps.LatLng(lat, lng);
+        map.setCenter(latlng);
+        map.setLevel(5);
+        const marker = new kakao.maps.Marker({ position: latlng, map });
+        const iw = new kakao.maps.InfoWindow({
+          content: `<div style="padding:6px 10px;font-size:12px;">국립대전현충원</div>`,
+        });
+        iw.open(map, marker);
+      });
+    };
+
+    // autoload=false 이므로 load로 초기화
+    if (w.kakao?.maps?.load) {
+      w.kakao.maps.load(init);
+    } else {
+      // 혹시 스크립트가 아직이면 잠깐 대기
+      const id = setInterval(() => {
+        if (w.kakao?.maps?.load) {
+          clearInterval(id);
+          w.kakao.maps.load(init);
+        }
+      }, 100);
+      return () => clearInterval(id);
+    }
+  }, []);
 
   const commonProps = {
     ref,
