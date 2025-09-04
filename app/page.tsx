@@ -1,21 +1,27 @@
 // app/page.tsx
 'use client';
-import Image from "next/image";
-import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import DaejeonCemeteryMap from "@/components/DaejeonCemeteryMap";
+
+import Image from 'next/image';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+// 지도 컴포넌트를 클라이언트 전용으로 로드(SSR 끔)
+const DaejeonCemeteryMap = dynamic(() => import('@/components/DaejeonCemeteryMap'), {
+  ssr: false,
+});
 
 export default function Page() {
   // 왼쪽 이미지 영역 크기 측정
   const imgBoxRef = useRef<HTMLDivElement>(null);
-  const [imgRatio, setImgRatio] = useState<number | null>(null);  // 이미지 세로/가로 비
+  const [imgRatio, setImgRatio] = useState<number | null>(null);
   const [imgHeight, setImgHeight] = useState<number | null>(null);
 
   // 오른쪽 버튼 스택 높이 측정
   const rightTopRef = useRef<HTMLDivElement>(null);
   const [rightTopH, setRightTopH] = useState<number | null>(null);
 
-  // 버튼 영역과 지도 사이 간격(px) — mt-6 = 24px
+  // 버튼 영역과 지도 사이 간격(px)
   const GAP = 24;
 
   const onImgComplete = (img: HTMLImageElement) => {
@@ -48,15 +54,19 @@ export default function Page() {
     return () => ro.disconnect();
   }, []);
 
-  // 지도 높이 계산: 왼쪽 이미지 높이 - 오른쪽 버튼 영역 높이 - 간격
+  // 지도 높이 계산: 이미지 높이 - 버튼 영역 높이 - 간격
   const mapH = useMemo(() => {
     if (imgHeight == null || rightTopH == null) return null;
     const h = imgHeight - rightTopH - GAP;
     return Math.max(160, Math.round(h));
   }, [imgHeight, rightTopH]);
 
-  // 버튼 공통 클래스(검은 테두리 + 가시성 강화)
-  const btn = "bg-gray-200 text-black px-5 py-3 rounded-lg text-center border-2 border-black hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black";
+  // 초기 렌더용 안전한 높이(fallback)
+  const safeMapH = mapH ?? 360;
+
+  // 버튼 공통 클래스
+  const btn =
+    'bg-gray-200 text-black px-5 py-3 rounded-lg text-center border-2 border-black hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black';
 
   return (
     <section className="p-6 max-w-6xl mx-auto space-y-8">
@@ -85,9 +95,9 @@ export default function Page() {
           </figure>
         </div>
 
-        {/* 오른쪽: 버튼 스택 + 지도(버튼 아래, 사진 하단과 정렬) */}
+        {/* 오른쪽: 버튼 스택 + 지도 */}
         <aside className="space-y-6">
-          {/* 버튼 블록(지도와 높이 동기화를 위해 ref로 측정) */}
+          {/* 버튼 블록 */}
           <div ref={rightTopRef} className="space-y-4">
             <h2 className="text-xl font-semibold">바로가기</h2>
             <nav className="grid gap-3">
@@ -102,16 +112,14 @@ export default function Page() {
           </div>
 
           {/* 지도: 버튼 아래, 왼쪽 사진 하단과 맞춤 */}
-          {mapH && (
-            <div className="mt-6">
-              <DaejeonCemeteryMap
-                bare
-                showHeader={false}
-                showExternalLinks={true}
-                heightPx={mapH}
-              />
-            </div>
-          )}
+          <div className="mt-6">
+            <DaejeonCemeteryMap
+              bare
+              showHeader={false}
+              showExternalLinks={true}
+              heightPx={safeMapH}
+            />
+          </div>
         </aside>
       </div>
     </section>
