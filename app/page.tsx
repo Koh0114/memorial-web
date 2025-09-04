@@ -105,7 +105,7 @@ export default function Page() {
               <Link href="/transparency" className={btn}>현황판</Link>
               <Link href="/etiquette" className={btn}>방문 시 예절</Link>
               <Link href="/guestbook" className={btn}>방명록</Link>
-              <Link href="/heroes" className={btn}>순국선열 호국영령</Link>
+              <Link href="/heroes" className={btn}>안장자 소개</Link>
               <Link href="/purpose" className={btn}>의의</Link>
               <Link href="/mosaic" className={btn}>헌화 현충탑</Link>
             </nav>

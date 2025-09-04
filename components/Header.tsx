@@ -12,7 +12,7 @@ const nav: NavItem[] = [
   { href: '/transparency', label: '현황판' },
   { href: '/mosaic', label: '헌화 현충탑' },
   { href: '/guestbook', label: '방명록' },
-  { href: '/heroes', label: '순국선열' },
+  { href: '/heroes', label: '안장자 소개' },
   { href: '/etiquette', label: '예절' },
   { href: '/purpose', label: '의의' },
 ];
